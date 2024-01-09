@@ -1,0 +1,76 @@
+﻿@page "/Login"
+@using Components.Constant_Values
+@using System.Text.Json
+@using Draft.Components.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using Microsoft.AspNetCore.Components.Forms
+
+<EditForm Model="_user" OnValidSubmit="ValidateUser">
+  <div class="form-group">
+      <label for="Username">Username:</label>
+      <InputText id="Username" @bind-Value="_user.Username" class="form-control" />
+  </div>
+  <div class="form-group">
+      <label for="Password">Password:</label>
+      <InputText id="Password" @bind-Value="_user.Password" class="form-control" />
+  </div>
+  <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+<Alert ShowAlert="_showAlert" AlertMessage="_alertMsg" CloseHandler="CloseAlertPressed"></Alert>
+
+@code
+{
+  private readonly Users _user = new Users();
+  private bool _showAlert;
+  private string? _alertMsg;
+
+  private async Task ValidateUser()
+  {
+      try
+      {
+          string jsonFromFile = await File.ReadAllTextAsync(ConstantValues.UserPath);
+          AllUser? allUser = JsonSerializer.Deserialize<AllUser>(jsonFromFile);
+
+          var user = allUser?.UsersList.FirstOrDefault(s => s.Username != null
+                                                      && s.Password != null
+                                                      && s.Username.Equals(_user.Username, StringComparison.OrdinalIgnoreCase)
+                                                      && s.Password.Equals(_user.Password));
+
+          if (user != null)
+          {
+              var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+              var userIdentity = authState.User.Identity;
+
+              if (userIdentity.IsAuthenticated)
+              {
+                NavManager.NavigateTo(user.IsAdmin ? "/admin" : "/staff");
+              }
+              else
+              {
+                _alertMsg = "Invalid username or password.";
+                _showAlert = true;
+              }
+          }
+          else
+          {
+              _alertMsg = "Invalid username or password.";
+              _showAlert = true;
+          }
+      }
+      catch (Exception ex)
+      {
+          _alertMsg = $"An error occurred: {ex.Message}";
+          _showAlert = true;
+      }
+  }
+
+  private void CloseAlertPressed()
+  {
+      _user.Username = "";
+      _user.Password = "";
+      _showAlert = false;
+  }
+}
