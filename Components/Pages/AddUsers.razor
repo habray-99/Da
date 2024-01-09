@@ -1,0 +1,107 @@
+﻿@page "/AddUsers"
+@using Draft.Components.Models
+<h3>AddUsers</h3>
+<EditForm Model="@_user" OnValidSubmit="@HandleValidSubmit">
+ <div class="form-group">
+     <label for="username">Username:</label>
+     <InputText id="username" @bind-Value="@_user.Username" class="form-control"/>
+ </div>
+ <div class="form-group">
+     <label for="password">Password:</label>
+     <InputText id="password" @bind-Value="@_user.Password" class="form-control"/>
+ </div>
+ <div class="form-group">
+     <label for="isAdmin">Is Admin:</label>
+     <InputCheckbox id="isAdmin" @bind-Value="@_user.IsAdmin" class="form-control"/>
+ </div>
+ <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+<h3>Users</h3>
+
+<table class="table">
+ <thead>
+ <tr>
+     <th>Guid</th>
+     <th>Username</th>
+     <th>Is Admin</th>
+     <th>Actions</th>
+ </tr>
+ </thead>
+ <tbody>
+ @foreach (var user in _usersList!)
+ {
+     <tr>
+         <td>@user.Guid</td>
+         <td>@user.Username</td>
+         <td>@user.IsAdmin</td>
+         <td>
+             <button class="btn btn-primary" @onclick="() => EditUser(user)">Edit</button>
+             <button class="btn btn-danger" @onclick="() => DeleteUser(user)">Delete</button>
+         </td>
+     </tr>
+ }
+ </tbody>
+</table>
+
+@code {
+    private Users _user = new Users();
+    private List<Users>? _usersList = new List<Users>();
+    
+    private async Task HandleValidSubmit()
+    {
+        if (_usersList != null)
+        {
+            var existingUser = _usersList.FirstOrDefault(u => u.Guid == _user.Guid);
+            if (existingUser != null)
+            {
+                // Update existing user
+                existingUser.Username = _user.Username;
+                existingUser.Password = _user.Password;
+                existingUser.IsAdmin = _user.IsAdmin;
+            }
+            else
+            {
+                // Add new user with a new Guid
+                _user.Guid = Guid.NewGuid();
+                _usersList.Add(new Users
+                {
+                    Guid = _user.Guid,
+                    Username = _user.Username,
+                    Password = _user.Password,
+                    IsAdmin = _user.IsAdmin
+                });
+            }
+            await StoreUsersToJson();
+        }
+        _user = new Users(); // Reset the form
+    }
+
+    private async Task StoreUsersToJson()
+    {
+        var usersFile = ConstantValues.UserPath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(Path.GetDirectoryName(usersFile));
+
+        // Serialize the list to JSON and write it to the file
+        var allUsers = new AllUser { UsersList = _usersList };
+        string newJson = JsonSerializer.Serialize(allUsers);
+        await File.WriteAllTextAsync(usersFile, newJson);
+    }
+
+    void EditUser(Users user)
+    {
+        // Set the form model to the user being edited
+        _user = user;
+        // No need to call JsRuntime.InvokeVoidAsync here unless you have a JavaScript function to open a modal
+    }
+    async Task DeleteUser(Users user)
+    {
+        // Remove the user from the list
+        _usersList.Remove(user);
+
+        // Serialize the updated list and write it back to the file
+        await StoreUsersToJson();
+    }
+
+}
