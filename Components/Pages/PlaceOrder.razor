@@ -1,0 +1,243 @@
+﻿@using Draft.Components.Layout
+@layout StaffLayout
+@using Microsoft.AspNetCore.Authorization
+@page "/PlaceOrder"
+@attribute [Authorize(Roles = "Staff")]
+@using Draft.Components.Models
+@using Draft.Components.Constant_Values
+@* @inject IJSRuntime JsRuntime *@
+
+<h3>Place Order</h3>
+
+<EditForm Model="@_order" OnValidSubmit="@HandleValidSubmit">
+    <div class="form-group">
+        <label for="coffeeId">Select Coffee:</label>
+        <InputSelect id="coffeeId" @bind-Value="@_order.CoffeeId" class="form-control">
+            @if (_coffeesList != null)
+            {
+                foreach (var coffee in _coffeesList)
+                {
+                    <option value="@coffee.Guid">@coffee.CoffeeName - $@coffee.Price</option>
+                }
+            }
+        </InputSelect>
+    </div>
+    <div class="form-group">
+        <label for="addOnIds">Add-Ons:</label>
+        <InputSelect id="addOnIds" @bind-Value="@_order.AddOnIds" class="form-control" multiple>
+            @if (_addOnsList != null)
+            {
+                foreach (var addOn in _addOnsList)
+                {
+                    <option value="@addOn.Guid">@addOn.AddOnName - $@addOn.AddOnPrice</option>
+                }
+            }
+        </InputSelect>
+    </div>
+    <div class="form-group">
+        <label for="quantity">Quantity:</label>
+        <InputNumber id="quantity" @bind-Value="@_order.Quantity" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label for="searchPhoneNo">Search by Phone Number:</label>
+        <InputText id="searchPhoneNo" @bind-Value="@_searchPhoneNo" class="form-control" @oninput="FilterCustomers" />
+        @* <button type="button" class="btn btn-primary" @onclick="FilterCustomers">Search</button> *@
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    private Order _order = new Order();
+    private List<Coffees>? _coffeesList = new List<Coffees>();
+    private List<CoffeeAddOns>? _addOnsList = new List<CoffeeAddOns>();
+    private List<Customers>? _customersList = new List<Customers>();
+    private List<Order>? _ordersList = new List<Order>();
+
+    private string _searchPhoneNo = "";
+    private List<Customers> _filteredCustomers = [];
+
+    private void FilterCustomers()
+    {
+        if (_customersList != null) _filteredCustomers = _customersList.Where(c => c.PhoneNo != null && c.PhoneNo.Contains(_searchPhoneNo)).ToList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var coffeeFile = ConstantValues.CoffeePath;
+        var addOnsFile = ConstantValues.AddOnsPath;
+        var customersFile = ConstantValues.CustomerPath;
+
+        if (File.Exists(coffeeFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(coffeeFile);
+                AllCoffees? allCoffees = JsonSerializer.Deserialize<AllCoffees>(jsonFromFile);
+
+                if (allCoffees != null)
+                {
+                    _coffeesList = allCoffees.CoffeesList;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+
+        if (File.Exists(addOnsFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(addOnsFile);
+                AllListOfCoffeeAddOns? allAddOns = JsonSerializer.Deserialize<AllListOfCoffeeAddOns>(jsonFromFile);
+
+                if (allAddOns != null)
+                {
+                    _addOnsList = allAddOns.AddOnsList;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+
+        if (File.Exists(customersFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(customersFile);
+                AllCustomerList? allCustomers = JsonSerializer.Deserialize<AllCustomerList>(jsonFromFile);
+
+                if (allCustomers != null)
+                {
+                    _customersList = allCustomers.AllCustomer;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Calculate the total price and apply discounts
+        _order.TotalPrice = CalculateTotalPrice(_order);
+        _order.CreatedAt = DateTime.Now;
+
+        // Save the order
+        await SaveOrder(_order);
+
+        // Reset the form
+        _order = new Order();
+    }
+
+    private double CalculateTotalPrice(Order order)
+    {
+        // Calculate the base price
+        if (_coffeesList != null)
+        {
+            var basePrice = _coffeesList.First(c => c.Guid == order.CoffeeId).Price;
+            var addOnsPrice = order.AddOnIds.Sum(id =>
+            {
+                if (_addOnsList != null) return _addOnsList.First(a => a.Guid == id).AddOnPrice;
+                return 0;
+            });
+            var priceBeforeDiscount = (basePrice + addOnsPrice) * order.Quantity;
+
+            // Check if the customer is a regular customer (e.g., by phone number)
+            if (_customersList != null)
+            {
+                var customer = _customersList.FirstOrDefault(c => c.PhoneNo == order.CustomerPhone);
+            }
+
+            bool isRegularCustomer = IsRegularCustomer(_searchPhoneNo); // You can enhance this check
+
+            // Apply the discount
+            var discountPercentage = isRegularCustomer ? 0.1 : 0;
+            var totalPrice = priceBeforeDiscount * (1 - discountPercentage);
+
+            return totalPrice;
+        }
+
+        return 0;
+    }
+    private bool IsRegularCustomer(string customerPhone)
+    {
+        // Find the customer
+        if (_customersList != null)
+        {
+            var customer = _customersList.FirstOrDefault(c => c.PhoneNo == customerPhone);
+            if (customer == null) return false; // Customer not found
+        }
+
+        FetchOrders();
+        // Get the dates of the customer's past purchases
+        if (_ordersList != null)
+        {
+            var purchaseDates = _ordersList.Where(o => o.CustomerPhone == customerPhone).Select(o => o.CreatedAt);
+
+            // Check if the customer has made a purchase every day for a full month (excluding weekends)
+            var lastMonth = DateTime.Now.AddMonths(-1);
+            var daysInLastMonth = Enumerable.Range(0, DateTime.DaysInMonth(lastMonth.Year, lastMonth.Month))
+                .Select(day => new DateTime(lastMonth.Year, lastMonth.Month, day));
+            var weekdaysInLastMonth = daysInLastMonth.Where(date => date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday);
+            bool isRegularCustomer = weekdaysInLastMonth.All(date => purchaseDates.Any(purchaseDate => purchaseDate.Date == date));
+
+            return isRegularCustomer;
+        }
+
+        return false;
+    }
+
+    private static async Task SaveOrder(Order order)
+    {
+        var directoryPath = ConstantValues.FilePath;
+        var ordersFile = ConstantValues.OrdersPath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(directoryPath);
+
+        // Initialize allOrders either from the existing file or as a new instance
+        AllOrders allOrders = File.Exists(ordersFile)
+            ? JsonSerializer.Deserialize<AllOrders>(await File.ReadAllTextAsync(ordersFile)) ?? new AllOrders()
+            : new AllOrders();
+
+        // Add the new order to the list
+        allOrders.OrdersList.Add(order);
+
+        // Serialize the list to JSON and write it to the file
+        string newJson = JsonSerializer.Serialize(allOrders);
+        await File.WriteAllTextAsync(ordersFile, newJson);
+    }
+    private async Task FetchOrders()
+    {
+        var ordersFile = ConstantValues.OrdersPath;
+
+        if (File.Exists(ordersFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(ordersFile);
+                AllOrders? allOrders = JsonSerializer.Deserialize<AllOrders>(jsonFromFile);
+
+                if (allOrders != null)
+                {
+                    _ordersList = allOrders.OrdersList;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+    }
+
+}

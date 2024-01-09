@@ -2,7 +2,7 @@
 
 public class ConstantValues
 {
-    private const string FilePath = "D:\\Cafe";
+    public const string FilePath = "D:\\Cafe";
     public static readonly string UserPath = Path.Combine(FilePath, "Users.json");
     public static readonly string CoffeePath = Path.Combine(FilePath, "Coffees.json");
     public static readonly string AddOnsPath = Path.Combine(FilePath, "AddOns.json");
