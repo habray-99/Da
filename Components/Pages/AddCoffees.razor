@@ -1,0 +1,125 @@
+﻿@page "/AddCoffees"
+@using System.Text.Json
+@using Draft.Components.Constant_Values
+@using Draft.Components.Models
+<h3>AddCoffees</h3>
+
+<EditForm Model="@_coffees" OnValidSubmit="@HandleValidSubmit">
+    <div class="form-group">
+        <label for="coffeeName">Coffee Name:</label>
+        <InputText id="coffeeName" @bind-Value="@_coffees.CoffeeName" class="form-control"/>
+    </div>
+    <div class="form-group">
+        <label for="Price">Price:</label>
+        <InputNumber id="Price" @bind-Value="@_coffees.Price" class="form-control"/>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+<h3>Coffees</h3>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Guid</th>
+        <th>Coffee Name</th>
+        <th>Price</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var coffee in _coffeesList!)
+    {
+        <tr>
+            <td>@coffee.Guid</td>
+            <td>@coffee.CoffeeName</td>
+            <td>@coffee.Price</td>
+            <td>
+                <button class="btn btn-primary" @onclick="() => EditCoffee(coffee)">Edit</button>
+                <button class="btn btn-danger" @onclick="() => DeleteCoffee(coffee)">Delete</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+@code {
+    private Coffees _coffees = new Coffees();
+    private List<Coffees>? _coffeesList = new List<Coffees>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var coffeeFile = ConstantValues.CoffeePath;
+
+        if (File.Exists(coffeeFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(coffeeFile);
+                AllCoffees? allCoffees = JsonSerializer.Deserialize<AllCoffees>(jsonFromFile);
+
+                if (allCoffees != null)
+                {
+                    _coffeesList = allCoffees.CoffeesList;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+    }
+    private async Task HandleValidSubmit()
+    {
+        if (_coffeesList != null)
+        {
+            var existingCoffee = _coffeesList.FirstOrDefault(c => c.Guid == _coffees.Guid);
+            if (existingCoffee != null)
+            {
+                // Update existing coffee
+                existingCoffee.CoffeeName = _coffees.CoffeeName;
+                existingCoffee.Price = _coffees.Price;
+            }
+            else
+            {
+                // Add new coffee with a new Guid
+                _coffees.Guid = Guid.NewGuid();
+                _coffeesList.Add(new Coffees
+                {
+                    Guid = _coffees.Guid,
+                    CoffeeName = _coffees.CoffeeName,
+                    Price = _coffees.Price
+                });
+            }
+            await StoreCoffeeToJson();
+        }
+        _coffees = new Coffees(); // Reset the form
+    }
+
+    private async Task StoreCoffeeToJson()
+    {
+        var coffeeFile = ConstantValues.CoffeePath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(Path.GetDirectoryName(coffeeFile));
+
+        // Serialize the list to JSON and write it to the file
+        string newJson = JsonSerializer.Serialize(new AllCoffees { CoffeesList = _coffeesList });
+        await File.WriteAllTextAsync(coffeeFile, newJson);
+    }
+
+    private void EditCoffee(Coffees coffee)
+    {
+        // Set the form model to the coffee being edited
+        _coffees = coffee;
+        // No need to call JsRuntime.InvokeVoidAsync here unless you have a JavaScript function to open a modal
+    }
+    async Task DeleteCoffee(Coffees coffee)
+    {
+        // Remove the coffee from the list
+        _coffeesList?.Remove(coffee);
+
+        // Serialize the updated list and write it back to the file
+        var detailsJson = JsonSerializer.Serialize(_coffeesList);
+        await File.WriteAllTextAsync(ConstantValues.CoffeePath, detailsJson);
+    }
+}
