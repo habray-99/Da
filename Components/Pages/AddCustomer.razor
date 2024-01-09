@@ -1,0 +1,98 @@
+﻿@page "/AddCustomer"
+@using Draft.Components.Models
+<h3>AddCustomer</h3>
+<EditForm Model="@_customer" OnValidSubmit="@HandleValidSubmit">
+  <div class="form-group">
+      <label for="customerName">Customer Name:</label>
+      <InputText id="customerName" @bind-Value="@_customer.CustomerName" class="form-control"/>
+  </div>
+  <div class="form-group">
+      <label for="PhoneNo">Phone Number:</label>
+      <InputText id="PhoneNo" @bind-Value="@_customer.PhoneNo" class="form-control"/>
+  </div>
+  <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+<h3>Customers</h3>
+
+<table class="table">
+  <thead>
+  <tr>
+      <th>Customer Name</th>
+      <th>Phone Number</th>
+      <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+  @foreach (var customer in _customersList!)
+  {
+      <tr>
+          <td>@customer.CustomerName</td>
+          <td>@customer.PhoneNo</td>
+          <td>
+              <button class="btn btn-primary" @onclick="() => EditCustomer(customer)">Edit</button>
+              <button class="btn btn-danger" @onclick="() => DeleteCustomer(customer)">Delete</button>
+          </td>
+      </tr>
+  }
+  </tbody>
+</table>
+
+@code {
+    private Customers _customer = new Customers();
+    private List<Customers> _customersList = new List<Customers>();
+    
+    private async Task HandleValidSubmit()
+    {
+        if (_customersList != null)
+        {
+            var existingCustomer = _customersList.FirstOrDefault(c => c.PhoneNo == _customer.PhoneNo);
+            if (existingCustomer != null)
+            {
+                // Update existing customer
+                existingCustomer.CustomerName = _customer.CustomerName;
+                // Phone number is already the same
+            }
+            else
+            {
+                // Add new customer
+                _customersList.Add(new Customers
+                {
+                    CustomerName = _customer.CustomerName,
+                    PhoneNo = _customer.PhoneNo
+                });
+            }
+            await StoreCustomersToJson();
+        }
+        _customer = new Customers(); // Reset the form
+    }
+
+    private async Task StoreCustomersToJson()
+    {
+        var customersFile = ConstantValues.CustomerPath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(Path.GetDirectoryName(customersFile));
+
+        // Serialize the list to JSON and write it to the file
+        var allCustomers = new AllCustomerList { AllCustomer = _customersList };
+        string newJson = JsonSerializer.Serialize(allCustomers);
+        await File.WriteAllTextAsync(customersFile, newJson);
+    }
+
+    void EditCustomer(Customers customer)
+    {
+        // Set the form model to the customer being edited
+        _customer = customer;
+        // No need to call JsRuntime.InvokeVoidAsync here unless you have a JavaScript function to open a modal
+    }
+    
+    async Task DeleteCustomer(Customers customer)
+    {
+        // Remove the customer from the list
+        _customersList?.Remove(customer);
+
+        // Serialize the updated list and write it back to the file
+        var detailsJson = JsonSerializer.Serialize(_customersList);
+        await File.WriteAllTextAsync(ConstantValues.CustomerPath, detailsJson);
+    }
+}
