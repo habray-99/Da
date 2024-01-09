@@ -34,10 +34,9 @@
           string jsonFromFile = await File.ReadAllTextAsync(ConstantValues.UserPath);
           AllUser? allUser = JsonSerializer.Deserialize<AllUser>(jsonFromFile);
 
-          var user = allUser?.UsersList.FirstOrDefault(s => s.Username != null
-                                                      && s.Password != null
-                                                      && s.Username.Equals(_user.Username, StringComparison.OrdinalIgnoreCase)
-                                                      && s.Password.Equals(_user.Password));
+          var user = allUser?.UsersList.FirstOrDefault(s => s is { Username: not null, Password: not null }
+                                                            && s.Username.Equals(_user.Username, StringComparison.OrdinalIgnoreCase)
+                                                            && s.Password.Equals(_user.Password));
 
           if (user != null)
           {
