@@ -1,0 +1,22 @@
+﻿@if(_showAlert)
+{
+    <div class="alert" role="alert">
+        @ChildContent
+        <button type="button" class="close" @onclick = "CloseHandler">Close</button>
+    </div>
+}
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback CloseHandler { get; set; }
+    private bool _showAlert = true;
+    private async Task ClosePressed()
+    {
+        await CloseHandler.InvokeAsync();
+        HideAlert();
+    } 
+    private void HideAlert()
+    {  
+        _showAlert = false;
+    }
+
+}
