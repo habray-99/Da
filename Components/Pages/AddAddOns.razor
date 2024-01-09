@@ -1,0 +1,124 @@
+﻿@using Draft.Components.Models
+@using Draft.Components.Constant_Values
+@using System.Text.Json
+<h3>AddAddOns</h3>
+
+<EditForm Model="@_addOns" OnValidSubmit="@HandleValidSubmit">
+   <div class="form-group">
+       <label for="addOnName">Add-On Name:</label>
+       <InputText id="addOnName" @bind-Value="@_addOns.AddOnName" class="form-control"/>
+   </div>
+   <div class="form-group">
+       <label for="AddOnPrice">Price:</label>
+       <InputNumber id="AddOnPrice" @bind-Value="@_addOns.AddOnPrice" class="form-control"/>
+   </div>
+   <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+<h3>Coffee Add-Ons</h3>
+
+<table class="table">
+   <thead>
+   <tr>
+       <th>Guid</th>
+       <th>Add-On Name</th>
+       <th>Price</th>
+       <th>Actions</th>
+   </tr>
+   </thead>
+   <tbody>
+   @foreach (var addOn in _addOnsList!)
+   {
+       <tr>
+           <td>@addOn.Guid</td>
+           <td>@addOn.AddOnName</td>
+           <td>@addOn.AddOnPrice</td>
+           <td>
+               <button class="btn btn-primary" @onclick="() => EditAddOn(addOn)">Edit</button>
+               <button class="btn btn-danger" @onclick="() => DeleteAddOn(addOn)">Delete</button>
+           </td>
+       </tr>
+   }
+   </tbody>
+</table>
+@code {
+    private CoffeeAddOns _addOns = new CoffeeAddOns();
+    private List<CoffeeAddOns>? _addOnsList = new List<CoffeeAddOns>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var addOnsFile = ConstantValues.AddOnsPath;
+
+        if (File.Exists(addOnsFile))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(addOnsFile);
+                AllListOfCoffeeAddOns? allAddOns = JsonSerializer.Deserialize<AllListOfCoffeeAddOns>(jsonFromFile);
+
+                if (allAddOns != null)
+                {
+                    _addOnsList = allAddOns.AddOnsList;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+    }
+    private async Task HandleValidSubmit()
+    {
+        if (_addOnsList != null)
+        {
+            var existingAddOn = _addOnsList.FirstOrDefault(a => a.Guid == _addOns.Guid);
+            if (existingAddOn != null)
+            {
+                // Update existing add-on
+                existingAddOn.AddOnName = _addOns.AddOnName;
+                existingAddOn.AddOnPrice = _addOns.AddOnPrice;
+            }
+            else
+            {
+                // Add new add-on with a new Guid
+                _addOns.Guid = Guid.NewGuid();
+                _addOnsList.Add(new CoffeeAddOns
+                {
+                    Guid = _addOns.Guid,
+                    AddOnName = _addOns.AddOnName,
+                    AddOnPrice = _addOns.AddOnPrice
+                });
+            }
+            await StoreAddOnsToJson();
+        }
+        _addOns = new CoffeeAddOns(); // Reset the form
+    }
+
+    private async Task StoreAddOnsToJson()
+    {
+        var addOnsFile = ConstantValues.AddOnsPath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(Path.GetDirectoryName(addOnsFile));
+
+        // Serialize the list to JSON and write it to the file
+        string newJson = JsonSerializer.Serialize(new AllListOfCoffeeAddOns { AddOnsList = _addOnsList });
+        await File.WriteAllTextAsync(addOnsFile, newJson);
+    }
+
+    private void EditAddOn(CoffeeAddOns addOn)
+    {
+        // Set the form model to the add-on being edited
+        _addOns = addOn;
+        // No need to call JsRuntime.InvokeVoidAsync here unless you have a JavaScript function to open a modal
+    }
+    async Task DeleteAddOn(CoffeeAddOns addOn)
+    {
+        // Remove the add-on from the list
+        _addOnsList?.Remove(addOn);
+
+        // Serialize the updated list and write it back to the file
+        var detailsJson = JsonSerializer.Serialize(_addOnsList);
+        await File.WriteAllTextAsync(ConstantValues.AddOnsPath, detailsJson);
+    }
+}
