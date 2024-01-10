@@ -78,51 +78,130 @@
          .ToList();
  }
 
- private async Task ExportToPdf()
- {
-     var htmlContent = new StringBuilder();
-     htmlContent.Append($"<html><body>");
-     htmlContent.Append($"<table class=\"table\">");
-     htmlContent.Append($"<thead>");
-     htmlContent.Append($"<tr>");
-     htmlContent.Append($"<th>Customer Phone</th>");
-     htmlContent.Append($"<th>Quantity</th>");
-     htmlContent.Append($"<th>Total Price</th>");
-     htmlContent.Append($"<th>Created At</th>");
-     htmlContent.Append($"</tr>");
-     htmlContent.Append($"</thead>");
-     htmlContent.Append($"<tbody>");
+ // private async Task ExportToPdf()
+ // {
+ //     var htmlContent = new StringBuilder();
+ //     htmlContent.Append($"<html><body>");
+ //     htmlContent.Append($"<table class=\"table\">");
+ //     htmlContent.Append($"<thead>");
+ //     htmlContent.Append($"<tr>");
+ //     htmlContent.Append($"<th>Customer Phone</th>");
+ //     htmlContent.Append($"<th>Quantity</th>");
+ //     htmlContent.Append($"<th>Total Price</th>");
+ //     htmlContent.Append($"<th>Created At</th>");
+ //     htmlContent.Append($"</tr>");
+ //     htmlContent.Append($"</thead>");
+ //     htmlContent.Append($"<tbody>");
+ //
+ //     // Assuming _filteredOrders is a List<Order> where Order is a class with properties CustomerPhone, Quantity, TotalPrice, CreatedAt
+ //     foreach (var order in filteredOrders)
+ //     {
+ //         htmlContent.Append($"<tr>");
+ //         htmlContent.AppendFormat("<td>{0}</td>", order.CustomerPhone);
+ //         htmlContent.AppendFormat("<td>{0}</td>", order.Quantity);
+ //         htmlContent.AppendFormat("<td>{0:C}</td>", order.TotalPrice); // Assuming TotalPrice is a decimal, format as currency
+ //         htmlContent.AppendFormat("<td>{0}</td>", order.CreatedAt.ToString("g")); // Format date as general date (short date + short time)
+ //         htmlContent.Append("</tr>");
+ //     }
+ //
+ //     htmlContent.Append($"</tbody>");
+ //     htmlContent.Append($"</table>");
+ //     htmlContent.Append($"</body></html>");
+ //
+ //     var renderer = new IronPdf.HtmlToPdf();
+ //        var pdf = renderer.RenderHtmlAsPdf(htmlContent.ToString());
+ //
+ //     var now = DateTime.Now;
+ //     var dateTimeString = now.ToString("yyyyMMdd_HHmm-ss").Replace(':', '_');
+ //     var directory = ConstantValues.PdfsPath;
+ //
+ //     if (!Directory.Exists(directory))
+ //     {
+ //         Directory.CreateDirectory(directory);
+ //     }
+ //
+ //     var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
+ //     // pdf.SaveAs(fileName);
+ //     pdf.SaveAs(fileName);
+ // }
+    private async Task ExportToPdf()
+{
+    // IronPdf.License.LicenseKey = "IRONSUITE.FOYOJ78626.REGAPTS.COM.5434-F87BE82E00-AT2YFL4MBGGW6I-5RFPR5LN6PN2-OM3S2UPD2AVV-WA22V3X2555R-NVAFENZYHBJT-OZRJKBNPL63A-BITFGM-TWNT2VFMAOKLUA-DEPLOYMENT.TRIAL-Q47FAA.TRIAL.EXPIRES.09.FEB.2024";
+    // var htmlContent = new StringBuilder();
+    // htmlContent.Append("<html><body>");
+    // htmlContent.Append("<table class=\"table\">");
+    // htmlContent.Append("<thead>");
+    // htmlContent.Append("<tr>");
+    // htmlContent.Append("<th>Customer Phone</th>");
+    // htmlContent.Append("<th>Quantity</th>");
+    // htmlContent.Append("<th>Total Price</th>");
+    // htmlContent.Append("<th>Created At</th>");
+    // htmlContent.Append("</tr>");
+    // htmlContent.Append("</thead>");
+    // htmlContent.Append("<tbody>");
+    //
+    // // foreach (var order in filteredOrders)
+    // // {
+    // //     htmlContent.Append("<tr>");
+    // //     htmlContent.AppendFormat("<td>{0}</td>", order.CustomerPhone);
+    // //     htmlContent.AppendFormat("<td>{0}</td>", order.Quantity);
+    // //     htmlContent.AppendFormat("<td>{0:C}</td>", order.TotalPrice);
+    // //     htmlContent.AppendFormat("<td>{0}</td>", order.CreatedAt.ToString("g"));
+    // //     htmlContent.Append("</tr>");
+    // // }
+    //
+    // htmlContent.Append("</tbody>");
+    // htmlContent.Append("</table>");
+    // htmlContent.Append("</body></html>");
+    //
+    // try
+    // {
+    //     var renderer = new IronPdf.HtmlToPdf();
+    //     var pdf = renderer.RenderHtmlAsPdf(htmlContent.ToString());
+    //
+    //     var now = DateTime.Now;
+    //     var dateTimeString = now.ToString("yyyyMMdd_HHmmss".Replace(':', '_'));
+    //     var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PdfExports");
+    //
+    //     if (!Directory.Exists(directory))
+    //     {
+    //         Directory.CreateDirectory(directory);
+    //     }
+    //
+    //     var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
+    //     pdf.SaveAs(fileName);
+    //
+    //     // After saving the PDF, you might want to open it or display a message to the user
+    //     // This part is platform-specific and may require additional code
+    // }
+    // catch (Exception ex)
+    // {
+    //     // Handle any exceptions that occur during PDF generation
+    //     Console.WriteLine($"An error occurred while generating the PDF: {ex.Message}");
+    // }
+    IronPdf.License.LicenseKey = "IRONSUITE.FOYOJ78626.REGAPTS.COM.5434-F87BE82E00-AT2YFL4MBGGW6I-5RFPR5LN6PN2-OM3S2UPD2AVV-WA22V3X2555R-NVAFENZYHBJT-OZRJKBNPL63A-BITFGM-TWNT2VFMAOKLUA-DEPLOYMENT.TRIAL-Q47FAA.TRIAL.EXPIRES.09.FEB.2024";
 
-     // Assuming _filteredOrders is a List<Order> where Order is a class with properties CustomerPhone, Quantity, TotalPrice, CreatedAt
-     foreach (var order in filteredOrders)
-     {
-         htmlContent.Append($"<tr>");
-         htmlContent.AppendFormat("<td>{0}</td>", order.CustomerPhone);
-         htmlContent.AppendFormat("<td>{0}</td>", order.Quantity);
-         htmlContent.AppendFormat("<td>{0:C}</td>", order.TotalPrice); // Assuming TotalPrice is a decimal, format as currency
-         htmlContent.AppendFormat("<td>{0}</td>", order.CreatedAt.ToString("g")); // Format date as general date (short date + short time)
-         htmlContent.Append("</tr>");
-     }
+    var htmlContent = "Fucking hell";
+    
 
-     htmlContent.Append($"</tbody>");
-     htmlContent.Append($"</table>");
-     htmlContent.Append($"</body></html>");
+    var renderer = new HtmlToPdf();
+    var result = renderer.RenderHtmlAsPdf(htmlContent);
 
-     var renderer = new HtmlToPdf();
-     var result = renderer.RenderHtmlAsPdf(htmlContent.ToString());
+    // Get the current date and time
+    var now = DateTime.Now;
 
-     var now = DateTime.Now;
-     var dateTimeString = now.ToString("yyyyMMdd_HHmm-ss").Replace(':', '_');
-     var directory = ConstantValues.PdfsPath;
+    // Format the date and time as a string
+    // .Replace(':', '_')
+    var dateTimeString = now.ToString("yyyy-MM-dd-HH-mm-ss").Replace(':', '_');
 
-     if (!Directory.Exists(directory))
-     {
-         Directory.CreateDirectory(directory);
-     }
+    // Specify the directory where you want to save the PDF
+    const string directory = @"D:\Cafe\pdfs";
 
-     var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
-     // pdf.SaveAs(fileName);
-     result.SaveAs(fileName);
- }
+    // Create the full path to the PDF file
+    var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
+
+    // Save the PDF to the specified file
+    result.SaveAs(fileName);
+}
 
 }
