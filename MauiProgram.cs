@@ -1,7 +1,4 @@
-﻿using System.Security.Claims;
-using Draft.Components.Models;
-using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Draft
 {

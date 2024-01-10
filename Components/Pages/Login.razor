@@ -1,10 +1,6 @@
 ﻿@page "/"
-@using Draft.Components.Layout
-@using System.Text.Json
 @using Draft.Components.Models
-@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavManager
-@using Microsoft.AspNetCore.Components.Forms
 
 <EditForm Model="@_user" OnValidSubmit="@ValidateUser">
   <div class="form-group">

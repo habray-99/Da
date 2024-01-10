@@ -21,18 +21,6 @@
             }
         </InputSelect>
     </div>
-    @* <div class="form-group"> *@
-    @*     <label for="addOnIds">Add-Ons:</label> *@
-    @*     <InputSelect id="addOnIds" @bind-Value="@_order.AddOnIds" class="form-control" multiple> *@
-    @*         @if (_addOnsList != null) *@
-    @*         { *@
-    @*             foreach (var addOn in _addOnsList) *@
-    @*             { *@
-    @*                 <option value="@addOn.Guid">@addOn.AddOnName - $@addOn.AddOnPrice</option> *@
-    @*             } *@
-    @*         } *@
-    @*     </InputSelect> *@
-    @* </div> *@
     <div class="form-group">
        <label>Add-Ons:</label>
        @if (_addOnsList != null)
@@ -53,9 +41,10 @@
     </div>
     <div class="form-group">
         <label for="searchPhoneNo">Search by Phone Number:</label>
-        <InputText id="searchPhoneNo" @bind-Value="@_searchPhoneNo" class="form-control" @oninput="FilterCustomers" />
+        <InputText id="searchPhoneNo" @bind-Value="@_order.CustomerPhone" class="form-control" @oninput="FilterCustomers" />
         @* <button type="button" class="btn btn-primary" @onclick="FilterCustomers">Search</button> *@
     </div>
+    <button class="btn btn-primary" @onclick="@AddToList">Add Another</button>
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
 @foreach (var orders in _ordersList)
@@ -92,6 +81,86 @@
         if (_customersList != null) _filteredCustomers = _customersList.Where(c => c.PhoneNo != null && c.PhoneNo.Contains(_searchPhoneNo)).ToList();
     }
 
+    public void AddToList()
+    {
+        if (_order.CoffeeId != null)
+        {
+            _ordersList.Add(new Order
+            {
+                Id = new Guid(),
+                CoffeeId = _order.CoffeeId,
+                AddOnIds = _order.AddOnIds,
+                CustomerPhone = _order.CustomerPhone,
+                Quantity = _order.Quantity,
+                TotalPrice = CalculateTotalPrice()
+            });
+        }
+    }
+    
+    private async Task HandleValidSubmit()
+    {
+        // Calculate the total price and apply discounts
+        // _order.TotalPrice = CalculateTotalPrice(_order);
+        _order.CreatedAt = DateTime.Now;
+        // _order.Id = Guid.NewGuid();
+
+        // Save the order
+        // await SaveOrder(_order);
+
+        // Reset the form
+        _order = new Order();
+    }
+    
+    private double CalculateTotalPrice()
+    {
+        var coffeePrice = _coffeesList.FirstOrDefault(c => c.Guid == _order.CoffeeId)?.Price ?? 0;
+        var addOnsPrice = _order.AddOnIds.Sum(addOnId => _addOnsList.FirstOrDefault(a => a.Guid == addOnId)?.AddOnPrice ?? 0);
+        return (coffeePrice + addOnsPrice) * _order.Quantity;
+    }
+
+    // private double CalculateTotalPrice(Order order)
+    // {
+    //     if (_coffeesList == null) return 0;
+    //     var basePrice = _coffeesList.First(c => c.Guid == order.CoffeeId).Price;
+    //     var addOnsPrice = order.AddOnIds.Sum(id =>
+    //     {
+    //         if (_addOnsList != null) return _addOnsList.First(a => a.Guid == id).AddOnPrice;
+    //         return 0;
+    //     });
+    //     var priceBeforeDiscount = (basePrice + addOnsPrice) * order.Quantity;
+    //
+    //     // Check if the customer is a regular customer (e.g., by phone number)
+    //     // if (_customersList != null)
+    //     // {
+    //     //     var customer = _customersList.FirstOrDefault(c => c.PhoneNo == order.CustomerPhone);
+    //     // }
+    //         
+    //
+    //     return priceBeforeDiscount;
+    //
+    // }
+
+    private static async Task SaveOrder(Order order)
+    {
+        var directoryPath = ConstantValues.FilePath;
+        var ordersFile = ConstantValues.OrdersPath;
+
+        // Ensure the directory exists
+        Directory.CreateDirectory(directoryPath);
+
+        // Initialize allOrders either from the existing file or as a new instance
+        AllOrders allOrders = File.Exists(ordersFile)
+            ? JsonSerializer.Deserialize<AllOrders>(await File.ReadAllTextAsync(ordersFile)) ?? new AllOrders()
+            : new AllOrders();
+
+        // Add the new order to the list
+        allOrders.OrdersList.Add(order);
+
+        // Serialize the list to JSON and write it to the file
+        string newJson = JsonSerializer.Serialize(allOrders);
+        await File.WriteAllTextAsync(ordersFile, newJson);
+    }
+
     protected override async Task OnInitializedAsync()
     {
         var coffeeFile = ConstantValues.CoffeePath;
@@ -102,7 +171,7 @@
         {
             try
             {
-                string jsonFromFile = await File.ReadAllTextAsync(coffeeFile);
+                var jsonFromFile = await File.ReadAllTextAsync(coffeeFile);
                 AllCoffees? allCoffees = JsonSerializer.Deserialize<AllCoffees>(jsonFromFile);
 
                 if (allCoffees != null)
@@ -155,64 +224,4 @@
             }
         }
     }
-    private async Task HandleValidSubmit()
-    {
-        // Calculate the total price and apply discounts
-        _order.TotalPrice = CalculateTotalPrice(_order);
-        _order.CreatedAt = DateTime.Now;
-
-        // Save the order
-        await SaveOrder(_order);
-
-        // Reset the form
-        _order = new Order();
-    }
-
-    private double CalculateTotalPrice(Order order)
-    {
-        if (_coffeesList != null)
-        {
-            var basePrice = _coffeesList.First(c => c.Guid == order.CoffeeId).Price;
-            var addOnsPrice = order.AddOnIds.Sum(id =>
-            {
-                if (_addOnsList != null) return _addOnsList.First(a => a.Guid == id).AddOnPrice;
-                return 0;
-            });
-            var priceBeforeDiscount = (basePrice + addOnsPrice) * order.Quantity;
-
-            // Check if the customer is a regular customer (e.g., by phone number)
-            // if (_customersList != null)
-            // {
-            //     var customer = _customersList.FirstOrDefault(c => c.PhoneNo == order.CustomerPhone);
-            // }
-            
-
-            return priceBeforeDiscount;
-        }
-
-        return 0;
-    }
-
-    private static async Task SaveOrder(Order order)
-    {
-        var directoryPath = ConstantValues.FilePath;
-        var ordersFile = ConstantValues.OrdersPath;
-
-        // Ensure the directory exists
-        Directory.CreateDirectory(directoryPath);
-
-        // Initialize allOrders either from the existing file or as a new instance
-        AllOrders allOrders = File.Exists(ordersFile)
-            ? JsonSerializer.Deserialize<AllOrders>(await File.ReadAllTextAsync(ordersFile)) ?? new AllOrders()
-            : new AllOrders();
-
-        // Add the new order to the list
-        allOrders.OrdersList.Add(order);
-
-        // Serialize the list to JSON and write it to the file
-        string newJson = JsonSerializer.Serialize(allOrders);
-        await File.WriteAllTextAsync(ordersFile, newJson);
-    }
-
-
 }
