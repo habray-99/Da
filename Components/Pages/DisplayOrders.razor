@@ -194,7 +194,12 @@
     var dateTimeString = now.ToString("yyyy-MM-dd-HH-mm-ss").Replace(':', '_');
 
     // Specify the directory where you want to save the PDF
-    const string directory = @"D:\Cafe\pdfs";
+    var directory = ConstantValues.PdfsPath;
+    
+    if (!Directory.Exists(directory))
+    {
+        Directory.CreateDirectory(directory);
+    }
 
     // Create the full path to the PDF file
     var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
