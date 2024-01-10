@@ -8,4 +8,5 @@ public class ConstantValues
     public static readonly string AddOnsPath = Path.Combine(FilePath, "AddOns.json");
     public static readonly string CustomerPath = Path.Combine(FilePath, "Customers.json");
     public static readonly string OrdersPath = Path.Combine(FilePath, "Orders.json");
+    public static readonly string PdfsPath = Path.Combine(FilePath,"pdfs\\");
 }

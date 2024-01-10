@@ -1,0 +1,124 @@
+﻿@page "/DisplayOrders"
+<h3>DisplayOrders</h3>
+
+@using System.IO
+@using System.Text
+@using Draft.Components.Models
+
+<input type="text" @bind="searchTerm" placeholder="Search by phone number..." />
+<input type="datetime-local" @bind="startDate" placeholder="Start Date" />
+<input type="datetime-local" @bind="endDate" placeholder="End Date" />
+
+<table class="table">
+ <thead>
+     <tr>
+         <th>Customer Phone</th>
+         <th>Quantity</th>
+         <th>Total Price</th>
+         <th>Created At</th>
+         <!-- Add more columns as needed -->
+     </tr>
+ </thead>
+ <tbody>
+     @foreach (var order in filteredOrders)
+     {
+         <tr>
+             <td>@order.CustomerPhone</td>
+             <td>@order.Quantity</td>
+             <td>@order.TotalPrice</td>
+             <td>@order.CreatedAt</td>
+             <!-- Display more order properties as needed -->
+         </tr>
+     }
+ </tbody>
+</table>
+
+<button @onclick="ExportToPdf">Export to PDF</button>
+@code {
+ private string searchTerm = "";
+ private DateTime startDate = DateTime.MinValue;
+ private DateTime endDate = DateTime.MaxValue;
+ private List<Order> orders = new List<Order>();
+ private List<Order> filteredOrders = new List<Order>();
+
+ protected override async Task OnInitializedAsync()
+ {
+     var ordersFile = ConstantValues.OrdersPath;
+
+     if (File.Exists(ordersFile))
+     {
+         try
+         {
+             string jsonFromFile = await File.ReadAllTextAsync(ordersFile);
+             AllOrders? allOrders = JsonSerializer.Deserialize<AllOrders>(jsonFromFile);
+
+             if (allOrders != null)
+             {
+               orders = allOrders.OrdersList;
+             }
+         }
+         catch (Exception e)
+         {
+             // Handle exceptions here, such as logging or displaying an error message
+             Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+         }
+     }
+     FilterOrders();
+ }
+
+ private void FilterOrders()
+ {
+     filteredOrders = orders
+         .Where(o => string.IsNullOrEmpty(searchTerm) || o.CustomerPhone.Contains(searchTerm))
+         .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+         .ToList();
+ }
+
+ private async Task ExportToPdf()
+ {
+     var htmlContent = new StringBuilder();
+     htmlContent.Append($"<html><body>");
+     htmlContent.Append($"<table class=\"table\">");
+     htmlContent.Append($"<thead>");
+     htmlContent.Append($"<tr>");
+     htmlContent.Append($"<th>Customer Phone</th>");
+     htmlContent.Append($"<th>Quantity</th>");
+     htmlContent.Append($"<th>Total Price</th>");
+     htmlContent.Append($"<th>Created At</th>");
+     htmlContent.Append($"</tr>");
+     htmlContent.Append($"</thead>");
+     htmlContent.Append($"<tbody>");
+
+     // Assuming _filteredOrders is a List<Order> where Order is a class with properties CustomerPhone, Quantity, TotalPrice, CreatedAt
+     foreach (var order in filteredOrders)
+     {
+         htmlContent.Append($"<tr>");
+         htmlContent.AppendFormat("<td>{0}</td>", order.CustomerPhone);
+         htmlContent.AppendFormat("<td>{0}</td>", order.Quantity);
+         htmlContent.AppendFormat("<td>{0:C}</td>", order.TotalPrice); // Assuming TotalPrice is a decimal, format as currency
+         htmlContent.AppendFormat("<td>{0}</td>", order.CreatedAt.ToString("g")); // Format date as general date (short date + short time)
+         htmlContent.Append("</tr>");
+     }
+
+     htmlContent.Append($"</tbody>");
+     htmlContent.Append($"</table>");
+     htmlContent.Append($"</body></html>");
+
+     var renderer = new ChromePdfRenderer();
+     var result = renderer.RenderHtmlAsPdf(htmlContent.ToString());
+
+     var now = DateTime.Now;
+     var dateTimeString = now.ToString("yyyyMMdd_HHmm-ss").Replace(':', '_');
+     var directory = ConstantValues.PdfsPath;
+
+     if (!Directory.Exists(directory))
+     {
+         Directory.CreateDirectory(directory);
+     }
+
+     var fileName = Path.Combine(directory, $"FilteredOrders_{dateTimeString}.pdf");
+     // pdf.SaveAs(fileName);
+     result.SaveAs(fileName);
+ }
+
+}

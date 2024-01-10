@@ -40,19 +40,12 @@
 
             if (user != null)
             {
-                if (user.IsAdmin)
-                {
-                    NavManager.NavigateTo("/AdminHome");
-                }
-                else
-                {
-                    NavManager.NavigateTo("/StaffHome");
-                }
+                NavManager.NavigateTo(user.IsAdmin ? "/AdminHome" : "/StaffHome");
             }
             else
             {
-                AlertMsg = "Invalid username or password.";
-                showAlert = true;
+                _alertMsg = "Invalid username or password.";
+                _showAlert = true;
             }
       }
       catch (Exception ex)
