@@ -1,5 +1,7 @@
 ﻿@page "/AddCoffees"
 @using Draft.Components.Models
+@using Draft.Components.Layout
+@layout AdminLayout
 <h3>AddCoffees</h3>
 
 <EditForm Model="@_coffees" OnValidSubmit="@HandleValidSubmit">

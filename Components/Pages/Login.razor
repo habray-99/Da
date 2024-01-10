@@ -1,4 +1,4 @@
-﻿@page "/Login"
+﻿@page "/"
 @using Components.Constant_Values
 @using System.Text.Json
 @using Draft.Components.Models
@@ -38,26 +38,22 @@
                                                             && s.Username.Equals(_user.Username, StringComparison.OrdinalIgnoreCase)
                                                             && s.Password.Equals(_user.Password));
 
-          if (user != null)
-          {
-              var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-              var userIdentity = authState.User.Identity;
-
-              if (userIdentity.IsAuthenticated)
-              {
-                NavManager.NavigateTo(user.IsAdmin ? "/admin" : "/staff");
-              }
-              else
-              {
-                _alertMsg = "Invalid username or password.";
-                _showAlert = true;
-              }
-          }
-          else
-          {
-              _alertMsg = "Invalid username or password.";
-              _showAlert = true;
-          }
+            if (user != null)
+            {
+                if (user.IsAdmin)
+                {
+                    NavManager.NavigateTo("/AdminHome");
+                }
+                else
+                {
+                    NavManager.NavigateTo("/StaffHome");
+                }
+            }
+            else
+            {
+                AlertMsg = "Invalid username or password.";
+                showAlert = true;
+            }
       }
       catch (Exception ex)
       {

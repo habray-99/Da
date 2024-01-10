@@ -1,4 +1,6 @@
 ﻿@page "/AddCustomer"
+@using Draft.Components.Layout
+@layout StaffLayout
 @using Draft.Components.Models
 <h3>AddCustomer</h3>
 <EditForm Model="@_customer" OnValidSubmit="@HandleValidSubmit">
