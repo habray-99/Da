@@ -1,4 +1,6 @@
 ﻿@page "/DisplayOrders"
+@using Draft.Components.Layout
+@layout StaffLayout
 <h3>DisplayOrders</h3>
 
 @using System.IO
@@ -34,6 +36,8 @@
 </table>
 
 <button @onclick="ExportToPdf">Export to PDF</button>
+
+
 @code {
  private string searchTerm = "";
  private DateTime startDate = DateTime.MinValue;
@@ -104,7 +108,7 @@
      htmlContent.Append($"</table>");
      htmlContent.Append($"</body></html>");
 
-     var renderer = new ChromePdfRenderer();
+     var renderer = new HtmlToPdf();
      var result = renderer.RenderHtmlAsPdf(htmlContent.ToString());
 
      var now = DateTime.Now;

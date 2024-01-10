@@ -1,0 +1,105 @@
+﻿@page "/DisplayCustomer"
+@using Draft.Components.Models
+@using System.Text
+@using Draft.Components.Layout
+@layout StaffLayout
+@using Microsoft.Extensions.Primitives
+<h3>DisplayCustomer</h3>
+
+<input type="text" @bind="searchTerm" placeholder="Search by phone number..." />
+
+<table class="table">
+ <thead>
+     <tr>
+         <th>Customer Name</th>
+         <th>Customer Phone</th>
+         <!-- Add more columns as needed -->
+     </tr>
+ </thead>
+ <tbody>
+     @foreach (var f in filteredCustomer)
+     {
+         <tr>
+             <td>@f.CustomerName</td>
+             <td>@f.PhoneNo</td>
+             <!-- Display more order properties as needed -->
+         </tr>
+     }
+ </tbody>
+</table>
+
+<button @onclick="ExportToPdf">Export to PDF</button>
+
+
+@code {
+    private string searchTerm = "";
+    private List<Customers> filteredCustomer = new List<Customers>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        var customerPath = ConstantValues.CustomerPath;
+
+        if (File.Exists(customerPath))
+        {
+            try
+            {
+                string jsonFromFile = await File.ReadAllTextAsync(customerPath);
+                AllCustomerList? allCustomerList = JsonSerializer.Deserialize<AllCustomerList>(jsonFromFile);
+
+                if (allCustomerList != null)
+                {
+                    filteredCustomer = allCustomerList.AllCustomer;
+                }
+            }
+            catch (Exception e)
+            {
+                // Handle exceptions here, such as logging or displaying an error message
+                Console.WriteLine($"An error occurred while reading the file: {e.Message}");
+            }
+        }
+    }
+
+    private async Task ExportToPdf()
+    {
+        var htmlContent = new StringBuilder();
+        htmlContent.Append("<html>");
+        htmlContent.Append("<body>");
+        htmlContent.Append("<table class=\"table\">");
+        htmlContent.Append(" <thead>");
+        htmlContent.Append("     <tr>");
+        htmlContent.Append("         <th>Customer Name</th>");
+        htmlContent.Append("         <th>Customer Phone</th>");
+        htmlContent.Append("         <!-- Add more columns as needed -->");
+        htmlContent.Append("     </tr>");
+        htmlContent.Append(" </thead>");
+        htmlContent.Append(" <tbody>");
+        foreach (var f in filteredCustomer)
+        {
+            htmlContent.Append("<tr>");
+                     htmlContent.AppendFormat("<td>{0}</td>",f.CustomerName);
+                     htmlContent.AppendFormat("<td>{0}</td>",f.PhoneNo);
+                     <!-- Display more order properties as needed -->
+                     htmlContent.Append("</tr>");
+        }
+        htmlContent.Append("</tbody>");
+        htmlContent.Append("</table>");
+        htmlContent.Append("</body>");
+        htmlContent.Append("</html>");
+        var renderer = new HtmlToPdf();
+        var result = renderer.RenderHtmlAsPdf(htmlContent.ToString());
+
+        var now = DateTime.Now;
+        var dateTimeString = now.ToString("yyyyMMdd_HHmm-ss").Replace(':', '_');
+        var directory = ConstantValues.PdfsPath;
+
+        if (!Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var fileName = Path.Combine(directory, $"Customer\\FilteredCustomer_{dateTimeString}.pdf");
+        // pdf.SaveAs(fileName);
+        result.SaveAs(fileName);
+    }
+
+}

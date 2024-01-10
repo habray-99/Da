@@ -1,0 +1,24 @@
+﻿@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+<div id="popup" style="display:none;">
+   <p>Are you sure you want to exit?</p>
+   <button @onclick="ConfirmExit">Yes</button>
+   <button @onclick="ClosePopup">No</button>
+</div>
+
+@code {
+    private async Task OpenPopup()
+    {
+        await JSRuntime.InvokeVoidAsync("showPopup");
+    }
+    private async Task ConfirmExit()
+    {
+        // Add your exit logic here
+        Console.WriteLine("Exiting...");
+        await ClosePopup();
+    }
+
+    private async Task ClosePopup()
+    {
+        await JSRuntime.InvokeVoidAsync("hidePopup");
+    }
+}

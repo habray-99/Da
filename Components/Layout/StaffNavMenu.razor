@@ -1,4 +1,5 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Draft</a>
     </div>
@@ -19,9 +20,28 @@
             </NavLink>
         </div>
         <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="PlaceOrder" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Place Order
-                    </NavLink>
+            <NavLink class="nav-link" href="PlaceOrder" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Place Order
+            </NavLink>
         </div>
-        </nav>
+    </nav>
+    <button @onclick="OpenPopup">Logout</button>
+    
+    @code {
+        private async Task OpenPopup()
+        {
+            await JSRuntime.InvokeVoidAsync("showPopup");
+        }
+        private async Task ConfirmExit()
+        {
+            // Add your exit logic here
+            Console.WriteLine("Exiting...");
+            await ClosePopup();
+        }
+    
+        private async Task ClosePopup()
+        {
+            await JSRuntime.InvokeVoidAsync("hidePopup");
+        }
+    }
 </div>

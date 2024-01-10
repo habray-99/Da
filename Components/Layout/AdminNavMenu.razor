@@ -1,4 +1,5 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject Microsoft.JSInterop.IJSRuntime JSRuntime
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Draft</a>
     </div>
@@ -30,4 +31,23 @@
         </div>
         
     </nav>
+    
+    <button @onclick="OpenPopup">Logout</button>
 </div>
+@code {
+    private async Task OpenPopup()
+    {
+        await JSRuntime.InvokeVoidAsync("showPopup");
+    }
+    private async Task ConfirmExit()
+    {
+        // Add your exit logic here
+        Console.WriteLine("Exiting...");
+        await ClosePopup();
+    }
+
+    private async Task ClosePopup()
+    {
+        await JSRuntime.InvokeVoidAsync("hidePopup");
+    }
+}

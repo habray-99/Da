@@ -1,25 +1,24 @@
 ﻿@page "/"
-@using Components.Constant_Values
+@using Draft.Components.Layout
 @using System.Text.Json
 @using Draft.Components.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
 @using Microsoft.AspNetCore.Components.Forms
 
-<EditForm Model="_user" OnValidSubmit="ValidateUser">
+<EditForm Model="@_user" OnValidSubmit="@ValidateUser">
   <div class="form-group">
       <label for="Username">Username:</label>
-      <InputText id="Username" @bind-Value="_user.Username" class="form-control" />
+        <input type="text" id="Username" @bind="_user.Username" class="form-control" />
   </div>
   <div class="form-group">
       <label for="Password">Password:</label>
-      <InputText id="Password" @bind-Value="_user.Password" class="form-control" />
+        <input type="password" id="Password" @bind="_user.Password" class="form-control" />
   </div>
   <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
 
-<Alert ShowAlert="_showAlert" AlertMessage="_alertMsg" CloseHandler="CloseAlertPressed"></Alert>
+@* <Alert ShowAlert="_showAlert" AlertMessage="_alertMsg" CloseHandler="CloseAlertPressed"></Alert> *@
 
 @code
 {
