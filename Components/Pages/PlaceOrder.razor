@@ -21,18 +21,32 @@
             }
         </InputSelect>
     </div>
+    @* <div class="form-group"> *@
+    @*     <label for="addOnIds">Add-Ons:</label> *@
+    @*     <InputSelect id="addOnIds" @bind-Value="@_order.AddOnIds" class="form-control" multiple> *@
+    @*         @if (_addOnsList != null) *@
+    @*         { *@
+    @*             foreach (var addOn in _addOnsList) *@
+    @*             { *@
+    @*                 <option value="@addOn.Guid">@addOn.AddOnName - $@addOn.AddOnPrice</option> *@
+    @*             } *@
+    @*         } *@
+    @*     </InputSelect> *@
+    @* </div> *@
     <div class="form-group">
-        <label for="addOnIds">Add-Ons:</label>
-        <InputSelect id="addOnIds" @bind-Value="@_order.AddOnIds" class="form-control" multiple>
-            @if (_addOnsList != null)
-            {
-                foreach (var addOn in _addOnsList)
-                {
-                    <option value="@addOn.Guid">@addOn.AddOnName - $@addOn.AddOnPrice</option>
-                }
-            }
-        </InputSelect>
+       <label>Add-Ons:</label>
+       @if (_addOnsList != null)
+       {
+           foreach (var addOn in _addOnsList)
+           {
+               <div class="form-check">
+                   <input class="form-check-input" type="checkbox" value="@addOn.Guid" @onchange="(e) => ToggleAddOn(e, addOn.Guid)" />
+                   <label class="form-check-label">@addOn.AddOnName - $@addOn.AddOnPrice</label>
+               </div>
+           }
+       }
     </div>
+
     <div class="form-group">
         <label for="quantity">Quantity:</label>
         <InputNumber id="quantity" @bind-Value="@_order.Quantity" class="form-control" />
@@ -44,6 +58,10 @@
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
+@foreach (var orders in _ordersList)
+{
+    <li>@orders.</li>
+}
 
 @code {
     private Order _order = new Order();
@@ -54,6 +72,20 @@
 
     private string _searchPhoneNo = "";
     private List<Customers> _filteredCustomers = [];
+    
+    void ToggleAddOn(ChangeEventArgs e, Guid addOnId)
+    {
+        var isChecked = (bool)e.Value;
+        if (isChecked)
+        {
+            _order.AddOnIds.Add(addOnId);
+        }
+        else
+        {
+            _order.AddOnIds.Remove(addOnId);
+        }
+    }
+
 
     private void FilterCustomers()
     {
