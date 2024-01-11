@@ -1,7 +1,7 @@
 # Draft
 
-welcome 
-this is a project for a cafe shop management 
+welcome
+this is a project for a cafe shop management
 
 ``` cs 
 

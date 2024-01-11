@@ -11,7 +11,7 @@
       <label for="Password">Password:</label>
         <input type="password" id="Password" @bind="_user.Password" class="form-control" />
   </div>
-  <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="submit" class="btn btn-primary mb-3">Login</button>
 </EditForm>
 
 @* <Alert ShowAlert="_showAlert" AlertMessage="_alertMsg" CloseHandler="CloseAlertPressed"></Alert> *@
@@ -32,6 +32,14 @@
           var user = allUser?.UsersList.FirstOrDefault(s => s is { Username: not null, Password: not null }
                                                             && s.Username.Equals(_user.Username, StringComparison.OrdinalIgnoreCase)
                                                             && s.Password.Equals(_user.Password));
+            if (!allUser.UsersList.Any()) 
+            {
+                if (_user.Username == "admin" && _user.Password == "admin")
+                {
+                    NavManager.NavigateTo("/AdminHome");
+                    return;
+                }
+            }
 
             if (user != null)
             {
