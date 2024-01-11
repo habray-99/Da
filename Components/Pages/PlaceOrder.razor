@@ -8,10 +8,10 @@
 
 <h3>Place Order</h3>
 
-<EditForm Model="@_order" OnValidSubmit="@HandleValidSubmit">
+<EditForm Model="@_orderItem" OnValidSubmit="@HandleValidSubmit">
     <div class="form-group">
         <label for="coffeeId">Select Coffee:</label>
-        <InputSelect id="coffeeId" @bind-Value="@_order.CoffeeId" class="form-control">
+        <InputSelect id="coffeeId" @bind-Value="@_orderItem.CoffeeGuid" class="form-control">
             @if (_coffeesList != null)
             {
                 foreach (var coffee in _coffeesList)
@@ -37,63 +37,74 @@
 
     <div class="form-group">
         <label for="quantity">Quantity:</label>
-        <InputNumber id="quantity" @bind-Value="@_order.Quantity" class="form-control" />
+        <InputNumber id="quantity" @bind-Value="@_orderItem.Quantity" class="form-control" />
     </div>
     <div class="form-group">
         <label for="searchPhoneNo">Search by Phone Number:</label>
         <InputText id="searchPhoneNo" @bind-Value="@_order.CustomerPhone" class="form-control" @oninput="FilterCustomers" />
         @* <button type="button" class="btn btn-primary" @onclick="FilterCustomers">Search</button> *@
     </div>
-    <button class="btn btn-primary" @onclick="@AddToList">Add Another</button>
-    <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
-@foreach (var orders in _ordersList)
+    <button class="btn btn-primary" @onclick="@AddToList">Add Another</button>
+    <button type="submit" class="btn btn-primary" @onclick="HandleValidSubmit">Submit</button>
+@if (_ordersList.Any())
 {
-    <li>@orders.</li>
+    <h4>Order Details:</h4>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Coffee</th>
+            <th>Add ins</th>
+            <th>Quantity</th>
+            <th>Total Price</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in _ordersList)
+        {
+            <tr>
+                <td>@GetCoffeeName(item.CoffeeGuid)</td>
+                <td>
+                    @foreach (var addIn in item.AddIns)
+                    {
+                        <span>@GetCoffeeAddOnName(addIn).</span>
+    
+                        <br />
+                    }
+                </td>
+                <td>@item.Quantity</td>
+                <td>@item.TotalPrice.ToString()</td>
+            </tr>
+        }
+        </tbody>
+    </table>
 }
 
 @code {
     private Order _order = new Order();
+    public OrderItem _orderItem = new OrderItem();
+    
     private List<Coffees>? _coffeesList = new List<Coffees>();
     private List<CoffeeAddOns>? _addOnsList = new List<CoffeeAddOns>();
     private List<Customers>? _customersList = new List<Customers>();
-    private List<Order>? _ordersList = new List<Order>();
+    private List<OrderItem>? _ordersList = new List<OrderItem>();
 
     private string _searchPhoneNo = "";
     private List<Customers> _filteredCustomers = [];
 
-    void ToggleAddOn(ChangeEventArgs e, Guid addOnId)
-    {
-        var isChecked = (bool)e.Value;
-        if (isChecked)
-        {
-            _order.AddOnIds.Add(addOnId);
-        }
-        else
-        {
-            _order.AddOnIds.Remove(addOnId);
-        }
-    }
-
-
-    private void FilterCustomers()
-    {
-        if (_customersList != null) _filteredCustomers = _customersList.Where(c => c.PhoneNo != null && c.PhoneNo.Contains(_searchPhoneNo)).ToList();
-    }
-
     public void AddToList()
     {
-        if (_order.CoffeeId != null)
+        if (_orderItem.CoffeeGuid != null)
         {
-            _ordersList.Add(new Order
+            _ordersList.Add(new OrderItem
             {
-                Id = new Guid(),
-                CoffeeId = _order.CoffeeId,
-                AddOnIds = _order.AddOnIds,
-                CustomerPhone = _order.CustomerPhone,
-                Quantity = _order.Quantity,
-                TotalPrice = CalculateTotalPrice()
+                Quantity = _orderItem.Quantity,
+                TotalPrice = CalculateTotalPrice(),
+                CoffeeGuid = _orderItem.CoffeeGuid,
+                AddIns = _orderItem.AddIns
             });
+
+
         }
     }
     
@@ -101,48 +112,30 @@
     {
         // Calculate the total price and apply discounts
         // _order.TotalPrice = CalculateTotalPrice(_order);
+        _order.Id = Guid.NewGuid();
         _order.CreatedAt = DateTime.Now;
-        // _order.Id = Guid.NewGuid();
+        _order.CustomerPhone = _order.CustomerPhone;
+        _order.OrderedItems = _ordersList;
+        _order.TotalPrice = CalculateTotalOrderPrice(_ordersList);
 
         // Save the order
-        // await SaveOrder(_order);
+        await SaveOrder(_order);
+        // await SaveOrder(_ordersList, _order.CustomerPhone);
 
         // Reset the form
         _order = new Order();
     }
     
-    private double CalculateTotalPrice()
+    private decimal CalculateTotalPrice()
     {
-        var coffeePrice = _coffeesList.FirstOrDefault(c => c.Guid == _order.CoffeeId)?.Price ?? 0;
-        var addOnsPrice = _order.AddOnIds.Sum(addOnId => _addOnsList.FirstOrDefault(a => a.Guid == addOnId)?.AddOnPrice ?? 0);
-        return (coffeePrice + addOnsPrice) * _order.Quantity;
+        var coffeePrice = _coffeesList.FirstOrDefault(c => c.Guid == _orderItem.CoffeeGuid)?.Price ?? 0;
+        var addOnsPrice = _orderItem.AddIns.Sum(addOnId => _addOnsList.FirstOrDefault(a => a.Guid == addOnId)?.AddOnPrice ?? 0);
+        return (decimal)((coffeePrice + addOnsPrice) * _orderItem.Quantity);
     }
-
-    // private double CalculateTotalPrice(Order order)
-    // {
-    //     if (_coffeesList == null) return 0;
-    //     var basePrice = _coffeesList.First(c => c.Guid == order.CoffeeId).Price;
-    //     var addOnsPrice = order.AddOnIds.Sum(id =>
-    //     {
-    //         if (_addOnsList != null) return _addOnsList.First(a => a.Guid == id).AddOnPrice;
-    //         return 0;
-    //     });
-    //     var priceBeforeDiscount = (basePrice + addOnsPrice) * order.Quantity;
-    //
-    //     // Check if the customer is a regular customer (e.g., by phone number)
-    //     // if (_customersList != null)
-    //     // {
-    //     //     var customer = _customersList.FirstOrDefault(c => c.PhoneNo == order.CustomerPhone);
-    //     // }
-    //         
-    //
-    //     return priceBeforeDiscount;
-    //
-    // }
-
+    
     private static async Task SaveOrder(Order order)
     {
-        var directoryPath = ConstantValues.FilePath;
+        const string directoryPath = ConstantValues.FilePath;
         var ordersFile = ConstantValues.OrdersPath;
 
         // Ensure the directory exists
@@ -153,6 +146,7 @@
             ? JsonSerializer.Deserialize<AllOrders>(await File.ReadAllTextAsync(ordersFile)) ?? new AllOrders()
             : new AllOrders();
 
+        // Create a new Order with the provided coffeeList
         // Add the new order to the list
         allOrders.OrdersList.Add(order);
 
@@ -160,6 +154,14 @@
         string newJson = JsonSerializer.Serialize(allOrders);
         await File.WriteAllTextAsync(ordersFile, newJson);
     }
+
+    private static double CalculateTotalOrderPrice(IEnumerable<OrderItem> ordersList)
+    {
+        // throw new NotImplementedException();
+
+        return ordersList.Sum(item => (double)item.TotalPrice);
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -224,4 +226,72 @@
             }
         }
     }
+    void ToggleAddOn(ChangeEventArgs e, Guid addOnId)
+    {
+        var isChecked = (bool)e.Value;
+        if (isChecked)
+        {
+            _orderItem.AddIns.Add(addOnId);
+        }
+        else
+        {
+            _orderItem.AddIns.Remove(addOnId);
+        }
+    }
+
+    string? GetCoffeeName(Guid guid)
+    {
+        return _coffeesList.FirstOrDefault(c => c.Guid == guid)?.CoffeeName;
+    }
+    string? GetCoffeeAddOnName(Guid guid)
+    {
+        return _addOnsList.FirstOrDefault(c => c.Guid == guid)?.AddOnName;
+    }
+
+    private void FilterCustomers()
+    {
+        if (_customersList != null) _filteredCustomers = _customersList.Where(c => c.PhoneNo != null && c.PhoneNo.Contains(_searchPhoneNo)).ToList();
+    }
+    // private double CalculateTotalPrice(Order order)
+    // {
+    //     if (_coffeesList == null) return 0;
+    //     var basePrice = _coffeesList.First(c => c.Guid == order.CoffeeId).Price;
+    //     var addOnsPrice = order.AddOnIds.Sum(id =>
+    //     {
+    //         if (_addOnsList != null) return _addOnsList.First(a => a.Guid == id).AddOnPrice;
+    //         return 0;
+    //     });
+    //     var priceBeforeDiscount = (basePrice + addOnsPrice) * order.Quantity;
+    //
+    //     // Check if the customer is a regular customer (e.g., by phone number)
+    //     // if (_customersList != null)
+    //     // {
+    //     //     var customer = _customersList.FirstOrDefault(c => c.PhoneNo == order.CustomerPhone);
+    //     // }
+    //         
+    //
+    //     return priceBeforeDiscount;
+    //
+    // }
+
+    // private static async Task SaveOrder(Order order)
+    // {
+    //     const string directoryPath = ConstantValues.FilePath;
+    //     var ordersFile = ConstantValues.OrdersPath;
+    //
+    //     // Ensure the directory exists
+    //     Directory.CreateDirectory(directoryPath);
+    //
+    //     // Initialize allOrders either from the existing file or as a new instance
+    //     AllOrders allOrders = File.Exists(ordersFile)
+    //         ? JsonSerializer.Deserialize<AllOrders>(await File.ReadAllTextAsync(ordersFile)) ?? new AllOrders()
+    //         : new AllOrders();
+    //
+    //     // Add the new order to the list
+    //     allOrders.OrdersList.Add(order);
+    //
+    //     // Serialize the list to JSON and write it to the file
+    //     string newJson = JsonSerializer.Serialize(allOrders);
+    //     await File.WriteAllTextAsync(ordersFile, newJson);
+    // }
 }
